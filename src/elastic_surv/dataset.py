@@ -14,38 +14,60 @@ class ESDataset(Dataset):
         es_index_pattern: str,
         time_column: str,
         event_column: str,
-        es_client: Any = "localhost:9020",
+        es_client: Any = "localhost",
         features: Optional[list] = None,
         train: bool = True,
         train_ratio: float = 0.9,
     ) -> None:
+        self._params = {
+            "es_index_pattern": es_index_pattern,
+            "time_column": time_column,
+            "event_column": event_column,
+            "es_client": es_client,
+            "features": features,
+            "train": train,
+            "train_ratio": train_ratio,
+        }
 
         self._df = ed.DataFrame(es_client, es_index_pattern)
 
         if features is None:
             features = self._df.columns
 
+        features = list(features)
+
         self._columns = features + [time_column, event_column]
         self._features = features
         self._time_column = time_column
         self._event_column = event_column
 
-        self._df = self._df[self._columns]
+        # self._df = self._df[self._columns]
 
-        self._train_df = self._df.sample(frac=train_ratio)
-        self._test_df = self._df.drop(list(self._train_df.index))
+        train_len = int(len(self._df) * train_ratio)
+        test_len = len(self._df) - train_len
+
+        self._train_df = self._df.head(train_len)
+        self._test_df = self._df.tail(test_len)
 
         self._train = train
         self._iter = 0
 
-    def train(self) -> None:
+    def train(self) -> "ESDataset":
         self._train = True
+        return self
 
-    def test(self) -> None:
+    def test(self) -> "ESDataset":
         self._train = False
+        return self
+
+    def copy(self) -> "ESDataset":
+        return ESDataset(**self._params)
+
+    def dataloader(self, batch_size: int = 512) -> tt.data.DataLoaderBatch:
+        return tt.data.DataLoaderBatch(self, batch_size)
 
     def __len__(self) -> int:
-        return len(self._columns)
+        return len(self._train_df) if self._train else len(self._test_df)
 
     def features(self) -> int:
         return len(self._columns) - 2
