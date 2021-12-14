@@ -4,7 +4,7 @@ import numpy as np
 import torchtuples as tt
 from pycox.models import LogisticHazard
 
-from elastic_surv.dataset import ESDataset
+from elastic_surv.dataset import BasicDataset
 from elastic_surv.models.base import ModelSkeleton
 from elastic_surv.models.params import Categorical, Integer, Params
 
@@ -59,8 +59,8 @@ class LogisticHazardModel(ModelSkeleton):
     def name() -> str:
         return "logistic_hazard"
 
-    def train(self, dataset: ESDataset, **kwargs: Any) -> "LogisticHazard":
-        assert isinstance(dataset, ESDataset), f"Invalid dataset {type(dataset)}"
+    def train(self, dataset: BasicDataset, **kwargs: Any) -> "LogisticHazard":
+        assert isinstance(dataset, BasicDataset), f"Invalid dataset {type(dataset)}"
 
         labtrans = dataset.discrete_outcome(
             LogisticHazard.label_transform, self.num_durations

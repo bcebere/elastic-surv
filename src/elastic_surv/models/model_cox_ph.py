@@ -4,7 +4,7 @@ import numpy as np
 import torchtuples as tt
 from pycox.models import CoxPH
 
-from elastic_surv.dataset import ESDataset
+from elastic_surv.dataset import BasicDataset
 from elastic_surv.models.base import ModelSkeleton
 from elastic_surv.models.params import Categorical, Integer, Params
 
@@ -60,8 +60,8 @@ class CoxPHModel(ModelSkeleton):
     def name() -> str:
         return "cox_ph"
 
-    def train(self, dataset: ESDataset, **kwargs: Any) -> "CoxPHModel":
-        assert isinstance(dataset, ESDataset), f"Invalid dataset {type(dataset)}"
+    def train(self, dataset: BasicDataset, **kwargs: Any) -> "CoxPHModel":
+        assert isinstance(dataset, BasicDataset), f"Invalid dataset {type(dataset)}"
         dl_train = dataset.copy().train().dataloader(batch_size=self.batch_size)
         dl_test = dataset.copy().test().dataloader(batch_size=self.batch_size)
 
