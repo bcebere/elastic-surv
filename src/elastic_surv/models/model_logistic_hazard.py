@@ -60,7 +60,8 @@ class LogisticHazardModel(ModelSkeleton):
         return "logistic_hazard"
 
     def train(self, dataset: BasicDataset, **kwargs: Any) -> "LogisticHazard":
-        assert isinstance(dataset, BasicDataset), f"Invalid dataset {type(dataset)}"
+        if not isinstance(dataset, BasicDataset):
+            raise ValueError(f"Invalid dataset {type(dataset)}")
 
         labtrans = dataset.discrete_outcome(
             LogisticHazard.label_transform, self.num_durations

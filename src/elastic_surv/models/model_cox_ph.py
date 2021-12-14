@@ -61,7 +61,9 @@ class CoxPHModel(ModelSkeleton):
         return "cox_ph"
 
     def train(self, dataset: BasicDataset, **kwargs: Any) -> "CoxPHModel":
-        assert isinstance(dataset, BasicDataset), f"Invalid dataset {type(dataset)}"
+        if not isinstance(dataset, BasicDataset):
+            raise ValueError(f"Invalid dataset {type(dataset)}")
+
         dl_train = dataset.copy().train().dataloader(batch_size=self.batch_size)
         dl_test = dataset.copy().test().dataloader(batch_size=self.batch_size)
 

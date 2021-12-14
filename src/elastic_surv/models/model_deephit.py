@@ -66,7 +66,8 @@ class DeepHitModel(ModelSkeleton):
         return "deephit"
 
     def train(self, dataset: BasicDataset, **kwargs: Any) -> "DeepHitModel":
-        assert isinstance(dataset, BasicDataset), f"Invalid dataset {type(dataset)}"
+        if not isinstance(dataset, BasicDataset):
+            raise ValueError(f"Invalid dataset {type(dataset)}")
 
         labtrans = dataset.discrete_outcome(
             DeepHitSingle.label_transform, self.num_durations
