@@ -45,8 +45,6 @@ class ESDataset(Dataset):
         self._event_column = event_column
         self._pair_rank = pair_rank
 
-        # self._df = self._df[self._columns]
-
         train_len = int(len(self._df) * train_ratio)
         test_len = len(self._df) - train_len
 

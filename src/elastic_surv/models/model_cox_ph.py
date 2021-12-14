@@ -1,5 +1,6 @@
 from typing import Any, List
 
+import numpy as np
 import torchtuples as tt
 from pycox.models import CoxPH
 
@@ -56,7 +57,7 @@ class CoxPHModel(ModelSkeleton):
 
     def train(self, dataset: ESDataset, **kwargs: Any) -> "CoxPHModel":
         assert isinstance(dataset, ESDataset), f"Invalid dataset {type(dataset)}"
-        dl_train = dataset.train().dataloader(batch_size=self.batch_size)
+        dl_train = dataset.copy().train().dataloader(batch_size=self.batch_size)
         dl_test = dataset.copy().test().dataloader(batch_size=self.batch_size)
 
         log = self.model.fit_dataloader(
@@ -65,4 +66,11 @@ class CoxPHModel(ModelSkeleton):
         if self.verbose:
             log.plot()
 
+        for idx, batch in enumerate(dl_train):
+            x_train, y_train = batch
+            _ = self.model.compute_baseline_hazards(x_train, y_train)
+
         return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        return self.model.predict_surv_df(X)

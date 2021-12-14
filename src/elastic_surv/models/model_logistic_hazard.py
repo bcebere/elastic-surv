@@ -1,5 +1,6 @@
 from typing import Any, List
 
+import numpy as np
 import torchtuples as tt
 from pycox.models import LogisticHazard
 
@@ -75,3 +76,6 @@ class LogisticHazardModel(ModelSkeleton):
             log.plot()
 
         return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        return self.model.interpolate(self.num_durations).predict_surv_df(X)
