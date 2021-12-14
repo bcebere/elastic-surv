@@ -30,7 +30,7 @@ jobs:
             bandit -r src/*
 
   Library:
-    needs: [Linter]
+      #needs: [Linter]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
