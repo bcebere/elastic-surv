@@ -17,9 +17,9 @@ class LogisticHazardModel(ModelSkeleton):
         batch_norm: bool = True,
         dropout: float = 0.1,
         lr: float = 1e-3,
-        epochs: int = 100,
+        epochs: int = 200,
         patience: int = 10,
-        batch_size: int = 512,
+        batch_size: int = 128,
         verbose: bool = False,
         num_durations: int = 10,
     ) -> None:
@@ -36,7 +36,7 @@ class LogisticHazardModel(ModelSkeleton):
             self.in_features,
             self.num_nodes,
             self.num_durations,  # output
-            self.batch_norm,
+            bool(self.batch_norm),
             self.dropout,
             output_bias=self.output_bias,
         )
@@ -49,11 +49,10 @@ class LogisticHazardModel(ModelSkeleton):
     @staticmethod
     def hyperparameter_space(*args: Any, **kwargs: Any) -> List[Params]:
         return [
-            Categorical("batch_norm", [True, False]),
+            Categorical("batch_norm", [1, 0]),
             Categorical("dropout", [0, 0.1, 0.2]),
             Categorical("lr", [1e-2, 1e-3, 1e-4]),
             Integer("patience", 10, 50, 10),
-            Categorical("batch_size", [128, 256, 512]),
         ]
 
     @staticmethod
