@@ -1,6 +1,8 @@
 from typing import Any, Callable, Optional
 
 import eland as ed
+import numpy as np
+import pandas as pd
 import torch
 import torchtuples as tt
 from pycox.models.data import pair_rank_mat
@@ -9,33 +11,24 @@ from torch.utils.data import Dataset
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-class ESDataset(Dataset):
+class BasicDataset(Dataset):
     def __init__(
         self,
-        es_index_pattern: str,
+        df: Any,
         time_column: str,
         event_column: str,
-        es_client: Any = "localhost",
         features: Optional[list] = None,
         train: bool = True,
         train_ratio: float = 0.9,
         pair_rank: bool = False,
         label_transformer: Optional[Callable] = None,
     ) -> None:
-        self._params = {
-            "es_index_pattern": es_index_pattern,
-            "time_column": time_column,
-            "event_column": event_column,
-            "es_client": es_client,
-            "features": features,
-            "train": train,
-            "train_ratio": train_ratio,
-        }
-
-        self._df = ed.DataFrame(es_client, es_index_pattern)
+        self._df = df
 
         if features is None:
-            features = self._df.columns
+            features = np.setdiff1d(
+                self._df.columns, [time_column, event_column]
+            ).tolist()
 
         features = list(features)
 
@@ -52,17 +45,15 @@ class ESDataset(Dataset):
         self._test_df = self._df.tail(test_len)
 
         self._train = train
+        self._train_ratio = train_ratio
         self._iter = 0
 
         self._label_transformer: Optional[Callable] = label_transformer
 
     def outcome(self) -> tuple:
-        working_df = self._train_df if self._train else self._test_df
-        working_df = ed.eland_to_pandas(working_df)
+        ...
 
-        return (working_df[self._time_column], working_df[self._event_column])
-
-    def pair_rank_mat(self, state: bool) -> "ESDataset":
+    def pair_rank_mat(self, state: bool) -> "BasicDataset":
         self._pair_rank = state
 
         return self
@@ -76,20 +67,13 @@ class ESDataset(Dataset):
 
         return labtrans
 
-    def train(self) -> "ESDataset":
+    def train(self) -> "BasicDataset":
         self._train = True
         return self
 
-    def test(self) -> "ESDataset":
+    def test(self) -> "BasicDataset":
         self._train = False
         return self
-
-    def copy(self) -> "ESDataset":
-        return ESDataset(
-            pair_rank=self._pair_rank,
-            label_transformer=self._label_transformer,
-            **self._params
-        )
 
     def dataloader(self, batch_size: int = 512) -> tt.data.DataLoaderBatch:
         return tt.data.DataLoaderBatch(self, batch_size)
@@ -99,6 +83,9 @@ class ESDataset(Dataset):
 
     def features(self) -> int:
         return len(self._columns) - 2
+
+    def to_pandas(self, df: Any) -> pd.DataFrame:
+        ...
 
     def __getitem__(self, index: list) -> Any:
         if not hasattr(index, "__iter__"):
@@ -112,7 +99,7 @@ class ESDataset(Dataset):
             self._iter = 0
 
         data = working_df.head(self._iter + batch_size).tail(batch_size)
-        data = ed.eland_to_pandas(data)
+        data = self.to_pandas(data)
         self._iter += batch_size
 
         X = data[self._features].values.squeeze()
@@ -132,3 +119,98 @@ class ESDataset(Dataset):
         X = torch.from_numpy(X).float().to(DEVICE)
 
         return tt.tuplefy(X, target)
+
+
+class ESDataset(BasicDataset):
+    def __init__(
+        self,
+        es_index_pattern: str,
+        time_column: str,
+        event_column: str,
+        es_client: Any = "localhost",
+        features: Optional[list] = None,
+        train: bool = True,
+        train_ratio: float = 0.9,
+        pair_rank: bool = False,
+        label_transformer: Optional[Callable] = None,
+    ) -> None:
+        self.es_index_pattern = es_index_pattern
+        self.es_client = es_client
+
+        df = ed.DataFrame(es_client, es_index_pattern)
+        super().__init__(
+            df=df,
+            time_column=time_column,
+            event_column=event_column,
+            features=features,
+            train=train,
+            train_ratio=train_ratio,
+            pair_rank=pair_rank,
+            label_transformer=label_transformer,
+        )
+
+    def outcome(self) -> tuple:
+        working_df = self._train_df if self._train else self._test_df
+        working_df = ed.eland_to_pandas(working_df)
+
+        return (working_df[self._time_column], working_df[self._event_column])
+
+    def copy(self) -> "ESDataset":
+        return ESDataset(
+            es_index_pattern=self.es_index_pattern,
+            time_column=self._time_column,
+            event_column=self._event_column,
+            features=self._features,
+            train=self._train,
+            train_ratio=self._train_ratio,
+            es_client=self.es_client,
+            pair_rank=self._pair_rank,
+            label_transformer=self._label_transformer,
+        )
+
+    def to_pandas(self, df: Any) -> pd.DataFrame:
+        return ed.eland_to_pandas(df)
+
+
+class PandasDataset(BasicDataset):
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        time_column: str,
+        event_column: str,
+        features: Optional[list] = None,
+        train: bool = True,
+        train_ratio: float = 0.9,
+        pair_rank: bool = False,
+        label_transformer: Optional[Callable] = None,
+    ) -> None:
+        super().__init__(
+            df=df,
+            time_column=time_column,
+            event_column=event_column,
+            features=features,
+            train=train,
+            train_ratio=train_ratio,
+            pair_rank=pair_rank,
+            label_transformer=label_transformer,
+        )
+
+    def outcome(self) -> tuple:
+        working_df = self._train_df if self._train else self._test_df
+
+        return (working_df[self._time_column], working_df[self._event_column])
+
+    def copy(self) -> "PandasDataset":
+        return PandasDataset(
+            df=self._df,
+            time_column=self._time_column,
+            event_column=self._event_column,
+            features=self._features,
+            train=self._train,
+            train_ratio=self._train_ratio,
+            pair_rank=self._pair_rank,
+            label_transformer=self._label_transformer,
+        )
+
+    def to_pandas(self, df: Any) -> pd.DataFrame:
+        return df
