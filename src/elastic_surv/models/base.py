@@ -44,7 +44,7 @@ class ModelSkeleton(metaclass=ABCMeta):
         ...
 
     def score(self, dataset: ESDataset, **kwargs: Any) -> dict:
-        test_ds = dataset.test()
+        test_ds = dataset.copy().test()
         test_dl = test_ds.dataloader(batch_size=len(test_ds))
         x_test, y_test = next(iter(test_dl))
 

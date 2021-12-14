@@ -6,7 +6,7 @@ from pycox.models import DeepHitSingle
 
 from elastic_surv.dataset import ESDataset
 from elastic_surv.models.base import ModelSkeleton
-from elastic_surv.models.params import Params
+from elastic_surv.models.params import Categorical, Float, Integer, Params
 
 
 class DeepHitModel(ModelSkeleton):
@@ -18,7 +18,7 @@ class DeepHitModel(ModelSkeleton):
         dropout: float = 0.1,
         lr: float = 1e-3,
         epochs: int = 100,
-        patience: int = 10,
+        patience: int = 25,
         batch_size: int = 512,
         verbose: bool = False,
         num_durations: int = 10,
@@ -52,7 +52,15 @@ class DeepHitModel(ModelSkeleton):
 
     @staticmethod
     def hyperparameter_space(*args: Any, **kwargs: Any) -> List[Params]:
-        return []
+        return [
+            Categorical("batch_norm", [True, False]),
+            Categorical("dropout", [0, 0.1, 0.2]),
+            Categorical("lr", [1e-2, 1e-3, 1e-4]),
+            Integer("patience", 10, 50, 10),
+            Categorical("batch_size", [128, 256, 512]),
+            Float("alpha", 0, 0.5),
+            Float("sigma", 0, 0.5),
+        ]
 
     @staticmethod
     def name() -> str:
@@ -75,7 +83,8 @@ class DeepHitModel(ModelSkeleton):
         self.model.optimizer.set_lr(self.lr)
 
         dl_train = (
-            dataset.train()
+            dataset.copy()
+            .train()
             .pair_rank_mat(state=True)
             .dataloader(batch_size=self.batch_size)
         )
