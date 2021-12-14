@@ -41,10 +41,10 @@ class BasicDataset(Dataset):
         self._event_column = event_column
         self._pair_rank = pair_rank
 
-        if df[self._time_column].dtype != "object":
+        if df[self._time_column].dtype == "object":
             raise ValueError(f"Invalid time data type {df[self._time_column].dtype}")
 
-        if df[self._event_column].dtype != "object":
+        if df[self._event_column].dtype == "object":
             raise ValueError(f"Invalid tevent data type {df[self._event_column].dtype}")
 
         train_len = int(len(self._df) * train_ratio)

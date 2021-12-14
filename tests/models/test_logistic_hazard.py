@@ -1,15 +1,15 @@
 import numpy as np
-from pysurvival.datasets import Dataset
+from lifelines.datasets import load_gbsg2
 
 from elastic_surv.dataset import PandasDataset
 from elastic_surv.models import LogisticHazardModel
 
 
 def load_data() -> tuple:
-    raw_dataset = Dataset("churn").load()
+    raw_dataset = load_gbsg2()
 
-    time_column = "months_active"
-    event_column = "churned"
+    time_column = "time"
+    event_column = "cens"
 
     features = np.setdiff1d(raw_dataset.columns, [time_column, event_column]).tolist()
 
