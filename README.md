@@ -62,6 +62,12 @@ ed.pandas_to_eland(raw_dataset,
                   es_refresh=True,
 ) 
 ```
+
+## Tutorials
+ - [Tutorial 1: Data backends](tutorials/tutorial_1_data_backends.ipynb)
+ - [Tutorial 2: Training a survival model over ElasticSearch](tutorials/tutorial_2_model_training.ipynb)
+ - [Tutorial 3: AutoML for survival analysis over ElasticSearch](tutorials/tutorial_3_automl.ipynb)
+ 
 ## Tests
 
 Install the testing dependencies using
@@ -72,8 +78,3 @@ The tests can be executed using
 ```bash
 pytest -vsx
 ```
-
-## Tutorials
- - [Tutorial 1: Data backends](tutorials/tutorial_1_data_backends.ipynb)
- - [Tutorial 2: Training a survival model over ElasticSearch](tutorials/tutorial_2_model_training.ipynb)
- - [Tutorial 3: AutoML for survival analysis over ElasticSearch](tutorials/tutorial_3_automl.ipynb)
