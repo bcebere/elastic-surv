@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 import numpy as np
 from pycox.evaluation import EvalSurv
 
-from elastic_surv.dataset import ESDataset
+from elastic_surv.dataset import BasicDataset
 from elastic_surv.models.params import Params
 
 
@@ -17,10 +17,16 @@ class ModelSkeleton(metaclass=ABCMeta):
     @staticmethod
     @abstractmethod
     def hyperparameter_space(*args: Any, **kwargs: Any) -> List[Params]:
+        """
+        Return the list of hyperparameters for the current model.
+        """
         ...
 
     @classmethod
     def sample_hyperparameters(cls, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+        """
+        Sample from the list of hyperparameters for the current model.
+        """
         param_space = cls.hyperparameter_space(*args, **kwargs)
 
         results = {}
@@ -33,17 +39,29 @@ class ModelSkeleton(metaclass=ABCMeta):
     @staticmethod
     @abstractmethod
     def name() -> str:
+        """
+        Return the name of the current model.
+        """
         ...
 
     @abstractmethod
-    def train(self, dataset: ESDataset, **kwargs: Any) -> "ModelSkeleton":
+    def train(self, dataset: BasicDataset, **kwargs: Any) -> "ModelSkeleton":
+        """
+        Train the current model
+        """
         ...
 
     @abstractmethod
     def predict(self, X: np.ndarray) -> np.ndarray:
+        """
+        Return the survival function for the input.
+        """
         ...
 
-    def score(self, dataset: ESDataset, **kwargs: Any) -> dict:
+    def score(self, dataset: BasicDataset, **kwargs: Any) -> dict:
+        """
+        Return the C-Index and Brier score for the input.
+        """
         test_ds = dataset.copy().test()
         test_dl = test_ds.dataloader(batch_size=len(test_ds))
         x_test, y_test = next(iter(test_dl))
