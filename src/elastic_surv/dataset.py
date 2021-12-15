@@ -25,6 +25,20 @@ class BasicDataset(Dataset):
         label_transformer: Optional[Callable] = None,
         verbose: bool = False,
     ) -> None:
+        """
+        Base class for the data backends.
+
+        Args:
+            df: ed.DataFrame or pd.DataFrame. The data source
+            time_column: str. Which column in the index contains the time-to-event data.
+            event_column: str. Which column in the index contains the outcome data.
+            features: list, optional. Which features to include.
+            train: bool. If the dataset is used for training or testing.
+            train_ratio: float. The ratio for the training data.
+            pair_rank: bool. Whether to compute the pair rank matrix. Used for DeepHit.
+            label_transformer: Callable. Callback to convert the time horizons to discrete values. Used by DeepHit or LogisticHazard.
+            verbose: bool. Print debug information.
+        """
         self._df = df
 
         if features is None:
@@ -92,14 +106,23 @@ class BasicDataset(Dataset):
             self._features.extend(new_cols)
 
     def outcome(self) -> tuple:
+        """
+        Get (time_to_event, outcome) values for the current dataset.
+        """
         ...
 
     def pair_rank_mat(self, state: bool) -> "BasicDataset":
+        """
+        Enable/disable pair rank matrix generation.
+        """
         self._pair_rank = state
 
         return self
 
     def discrete_outcome(self, transformer: Any, num_durations: int) -> Any:
+        """
+        Convert outcomes to discrete points.
+        """
         labtrans = transformer(num_durations)
 
         labtrans.fit(*self.train().outcome())
@@ -109,26 +132,47 @@ class BasicDataset(Dataset):
         return labtrans
 
     def train(self) -> "BasicDataset":
+        """
+        Enable train mode.
+        """
         self._train = True
         return self
 
     def test(self) -> "BasicDataset":
+        """
+        Enable test mode.
+        """
         self._train = False
         return self
 
     def dataloader(self, batch_size: int = 512) -> tt.data.DataLoaderBatch:
+        """
+        Return the dataloader for the current dataset.
+        """
         return tt.data.DataLoaderBatch(self, batch_size)
 
     def __len__(self) -> int:
+        """
+        Return the length of the current dataset.
+        """
         return len(self._train_df) if self._train else len(self._test_df)
 
     def features(self) -> int:
+        """
+        Return the number of features.
+        """
         return len(self._features)
 
     def to_pandas(self, df: Any) -> pd.DataFrame:
+        """
+        Convert the dataset to pandas DataFrame
+        """
         ...
 
     def encode(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        One-hot encoding for non-numeric columns
+        """
         df = df.copy()
         for col in self._encoders:
             ohe = self._encoders[col]
@@ -143,6 +187,9 @@ class BasicDataset(Dataset):
         return df
 
     def __getitem__(self, index: list) -> Any:
+        """
+        Retrive batches from the backend.
+        """
         if not hasattr(index, "__iter__"):
             index = [index]
 
@@ -192,6 +239,21 @@ class ESDataset(BasicDataset):
         label_transformer: Optional[Callable] = None,
         verbose: bool = False,
     ) -> None:
+        """
+        Class for the ElasticSearch data backends.
+
+        Args:
+            es_index_pattern: str. The index pattern to retrieve from ElasticSearch
+            time_column: str. Which column in the index contains the time-to-event data.
+            event_column: str. Which column in the index contains the outcome data.
+            es_client: str or elasticsearch.Elasticsearch object. Default is "localhost".
+            features: list, optional. Which features to include.
+            train: bool. If the dataset is used for training or testing.
+            train_ratio: float. The ratio for the training data.
+            pair_rank: bool. Whether to compute the pair rank matrix. Used for DeepHit.
+            label_transformer: Callable. Callback to convert the time horizons to discrete values. Used by DeepHit or LogisticHazard.
+            verbose: bool. Print debug information.
+        """
         self.es_index_pattern = es_index_pattern
         self.es_client = es_client
 
@@ -209,12 +271,19 @@ class ESDataset(BasicDataset):
         )
 
     def outcome(self) -> tuple:
+        """
+        Get (time_to_event, outcome) values for the current dataset.
+        """
+
         working_df = self._train_df if self._train else self._test_df
         working_df = ed.eland_to_pandas(working_df)
 
         return (working_df[self._time_column], working_df[self._event_column])
 
     def copy(self) -> "ESDataset":
+        """
+        Duplicate the ESDataset object.
+        """
         return ESDataset(
             es_index_pattern=self.es_index_pattern,
             time_column=self._time_column,
@@ -228,6 +297,9 @@ class ESDataset(BasicDataset):
         )
 
     def to_pandas(self, df: Any) -> pd.DataFrame:
+        """
+        Convert the eland.DataFrame to pandas dataframe
+        """
         return ed.eland_to_pandas(df)
 
 
@@ -244,6 +316,21 @@ class PandasDataset(BasicDataset):
         label_transformer: Optional[Callable] = None,
         verbose: bool = False,
     ) -> None:
+        """
+        Class for the Pandas data backends.
+
+        Args:
+            df: pd.DataFrame.
+            time_column: str. Which column in the index contains the time-to-event data.
+            event_column: str. Which column in the index contains the outcome data.
+            features: list, optional. Which features to include.
+            train: bool. If the dataset is used for training or testing.
+            train_ratio: float. The ratio for the training data.
+            pair_rank: bool. Whether to compute the pair rank matrix. Used for DeepHit.
+            label_transformer: Callable. Callback to convert the time horizons to discrete values. Used by DeepHit or LogisticHazard.
+            verbose: bool. Print debug information.
+        """
+
         super().__init__(
             df=df,
             time_column=time_column,
@@ -257,11 +344,17 @@ class PandasDataset(BasicDataset):
         )
 
     def outcome(self) -> tuple:
+        """
+        Get (time_to_event, outcome) values for the current dataset.
+        """
         working_df = self._train_df if self._train else self._test_df
 
         return (working_df[self._time_column], working_df[self._event_column])
 
     def copy(self) -> "PandasDataset":
+        """
+        Duplicate the dataset.
+        """
         return PandasDataset(
             df=self._df,
             time_column=self._time_column,

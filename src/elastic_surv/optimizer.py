@@ -27,10 +27,20 @@ class HyperbandOptimizer:
             models.DeepHitModel,
             models.LogisticHazardModel,
         ],
-        max_iter: int = 81,  # maximum iterations per configuration
-        eta: int = 3,  # defines configuration downsampling rate (default = 3)
+        max_iter: int = 81,
+        eta: int = 3,
         verbose: bool = False,
+        output_epochs: int = 200,
     ) -> None:
+        """
+        HyperbandOptimizer helps you pick a good model for your dataset.
+
+        Args:
+            seeds: list. Baseline models. They must implement the ModelSkeleton interface
+            max_iter: int. maximum iterations per configuration
+            eta: int. defines configuration downsampling rate.
+            verbose: bool. Enable debug logging.
+        """
         self.seeds = seeds
         self.max_iter = max_iter
         self.eta = eta
@@ -47,12 +57,15 @@ class HyperbandOptimizer:
             "model": "nop",
             "params": {},
         }
+        self.output_epochs = output_epochs
         self.visited: Set[str] = set()
 
         self.model_best_score = {}
         self.verbose = verbose
 
         for seed in self.seeds:
+            if not issubclass(seed, models.ModelSkeleton):
+                raise ValueError(f"Invalid type for seed {seed}")
             self.model_best_score[seed.name()] = -np.inf
 
     def _hash_dict(self, name: str, dict_val: dict) -> str:
@@ -108,6 +121,9 @@ class HyperbandOptimizer:
         return score
 
     def select_model(self, dataset: ESDataset) -> Any:
+        """
+        Run the AutoML routine and select the best model.
+        """
         for s in reversed(range(self.s_max + 1)):
 
             # initial number of configurations
@@ -157,7 +173,7 @@ class HyperbandOptimizer:
             self.model_best_score, key=self.model_best_score.get, reverse=True  # type: ignore
         )[:2]
 
-        self.candidate["params"]["epochs"] = 200
+        self.candidate["params"]["epochs"] = self.output_epochs
 
         return self.candidate["model"](
             in_features=dataset.features(), **self.candidate["params"]
