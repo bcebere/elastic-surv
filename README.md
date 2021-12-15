@@ -74,4 +74,6 @@ pytest -vsx
 ```
 
 ## Tutorials
-TODO
+ - [Tutorial 1: Data backends](tutorials/tutorial_1_data_backends.ipynb)
+ - [Tutorial 2: Training a survival model over ElasticSearch](tutorials/tutorial_2_model_training.ipynb)
+ - [Tutorial 3: AutoML for survival analysis over ElasticSearch](tutorials/tutorial_3_automl.ipynb)
