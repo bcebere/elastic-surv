@@ -128,6 +128,20 @@ class BasicDataset(Dataset):
     def to_pandas(self, df: Any) -> pd.DataFrame:
         ...
 
+    def encode(self, df: pd.DataFrame) -> pd.DataFrame:
+        df = df.copy()
+        for col in self._encoders:
+            ohe = self._encoders[col]
+
+            encoded = pd.DataFrame(
+                ohe.transform(df[col].values.reshape(-1, 1)),
+                columns=ohe.get_feature_names([col]),
+                index=df.index.copy(),
+            )
+            df = pd.concat([df, encoded], axis=1)
+            df.drop(columns=[col], inplace=True)
+        return df
+
     def __getitem__(self, index: list) -> Any:
         if not hasattr(index, "__iter__"):
             index = [index]
@@ -143,16 +157,7 @@ class BasicDataset(Dataset):
         data = self.to_pandas(data)
         self._iter += batch_size
 
-        for col in self._encoders:
-            ohe = self._encoders[col]
-
-            encoded = pd.DataFrame(
-                ohe.transform(data[col].values.reshape(-1, 1)),
-                columns=ohe.get_feature_names([col]),
-                index=data.index.copy(),
-            )
-            data = pd.concat([data, encoded], axis=1)
-            data.drop(columns=[col], inplace=True)
+        data = self.encode(data)
 
         X = data[self._features].values.squeeze()
         T = data[self._time_column].values.squeeze()

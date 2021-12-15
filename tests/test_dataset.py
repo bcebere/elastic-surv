@@ -5,8 +5,8 @@ from elastic_surv.dataset import PandasDataset
 
 def generate_dummy(n: int = 3) -> PandasDataset:
     dummy = pd.DataFrame(
-        [[1 * i, 2 * i, 3 * i] for i in range(1, n + 1)],
-        columns=["A", "B", "C"],
+        [[1 * i, 2 * i, 3 * i, "a" * i] for i in range(1, n + 1)],
+        columns=["A", "B", "C", "D"],
     )
 
     return PandasDataset(
@@ -18,9 +18,9 @@ def generate_dummy(n: int = 3) -> PandasDataset:
 
 
 def test_pandas_dataset_sanity() -> None:
-    df = generate_dummy()
+    df = generate_dummy(3)
 
-    assert df._features == ["C"]
+    assert df._features == ["C"] + ["D_" + "a" * i for i in range(1, 4)]
     assert df._time_column == "A"
     assert df._event_column == "B"
     assert df._pair_rank is False
@@ -46,9 +46,9 @@ def test_pandas_dataset_train_test() -> None:
     assert dup._train is False
 
     assert len(df.train()) == 2
-    assert df.train().features() == 1
+    assert df.train().features() == 4
     assert len(df.test()) == 1
-    assert df.test().features() == 1
+    assert df.test().features() == 4
 
 
 def test_pandas_dataset_rank_mat() -> None:
@@ -68,15 +68,21 @@ def test_pandas_dataloader() -> None:
     it = iter(dl)
 
     x, y = next(it)
-    assert list(x.shape) == [5]
+    assert list(x.shape) == [5, 11]
 
     t, e = y
     assert len(t) == 5
     assert len(e) == 5
 
     x, y = next(it)
-    assert list(x.shape) == [4]
+    assert list(x.shape) == [4, 11]
 
     t, e = y
     assert len(t) == 4
     assert len(e) == 4
+
+    dummy2 = pd.DataFrame(
+        [[1 * i, 2 * i, 3 * i, "a" * i] for i in range(1, 3)],
+        columns=["A", "B", "C", "D"],
+    )
+    df.encode(dummy2)
