@@ -20,6 +20,14 @@
 - :fire: ElasticSearch support using [eland](https://github.com/elastic/eland).
 - :cyclone: Automatic model selection using HyperBand.
  
+## Problem formulation
+Risk estimation tasks require:
+ - A set of covariates/features(X).
+ - An outcome/event column(Y) - 0 means right censoring, 1 means that the event occured.
+ - Time to event column(T) - the duration until the event or the censoring occured. 
+
+The risk estimation task output is a survival function: for N time horizons, it outputs the probability of "survival"(event not occurring) at each horizon.
+ 
 ## Installation
 
 For configuring the ELK stack, please follow the instructions [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/install-elasticsearch.html).
@@ -31,6 +39,11 @@ $ pip install .
 
 ## Sample Usage
 
+For each ElasticSearch data backend, we need to mention:
+ - the es_index_pattern and the es_client for the ES connection.
+ - which keys in the ES index stand for the time-to-event and outcome data.
+ - optional: which features to include from the index.
+
 ```python
 from elastic_surv.dataset import ESDataset
 from elastic_surv.models import CoxPHModel
@@ -39,6 +52,7 @@ dataset = ESDataset(
     es_index_pattern = 'churn-prediction',
     time_column = 'months_active',
     event_column = 'churned',
+    es_client = "localhost",
 )
 
 model = CoxPHModel(in_features = dataset.features())
