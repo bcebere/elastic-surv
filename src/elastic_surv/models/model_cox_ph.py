@@ -1,12 +1,15 @@
 from typing import Any, List
 
 import numpy as np
+import torch
 import torchtuples as tt
 from pycox.models import CoxPH
 
 from elastic_surv.dataset import BasicDataset
 from elastic_surv.models.base import ModelSkeleton
 from elastic_surv.models.params import Categorical, Integer, Params
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class CoxPHModel(ModelSkeleton):
@@ -51,7 +54,7 @@ class CoxPHModel(ModelSkeleton):
             bool(self.batch_norm),
             self.dropout,
             output_bias=self.output_bias,
-        )
+        ).to(DEVICE)
 
         self.model = CoxPH(self.net, tt.optim.Adam)
         self.model.optimizer.set_lr(lr)
@@ -90,11 +93,9 @@ class CoxPHModel(ModelSkeleton):
         dl_train = dataset.copy().train().dataloader(batch_size=self.batch_size)
         dl_test = dataset.copy().test().dataloader(batch_size=self.batch_size)
 
-        log = self.model.fit_dataloader(
+        self.model.fit_dataloader(
             dl_train, self.epochs, self.callbacks, self.verbose, val_dataloader=dl_test
         )
-        if self.verbose:
-            log.plot()
 
         for idx, batch in enumerate(dl_train):
             x_train, y_train = batch

@@ -1,12 +1,15 @@
 from typing import Any, List
 
 import numpy as np
+import torch
 import torchtuples as tt
 from pycox.models import DeepHitSingle
 
 from elastic_surv.dataset import BasicDataset
 from elastic_surv.models.base import ModelSkeleton
 from elastic_surv.models.params import Categorical, Float, Integer, Params
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class DeepHitModel(ModelSkeleton):
@@ -58,7 +61,7 @@ class DeepHitModel(ModelSkeleton):
             bool(self.batch_norm),
             self.dropout,
             output_bias=self.output_bias,
-        )
+        ).to(DEVICE)
         self.callbacks = [tt.cb.EarlyStopping(patience=patience)]
         self.epochs = epochs
         self.verbose = verbose
@@ -121,11 +124,9 @@ class DeepHitModel(ModelSkeleton):
             .dataloader(batch_size=self.batch_size)
         )
 
-        log = self.model.fit_dataloader(
+        self.model.fit_dataloader(
             dl_train, self.epochs, self.callbacks, self.verbose, val_dataloader=dl_test
         )
-        if self.verbose:
-            log.plot()
 
         dataset.pair_rank_mat(state=False)
 
