@@ -22,9 +22,9 @@
  
 ## Problem formulation
 Risk estimation tasks require:
- - A set of covariates/features(X).
- - An outcome/event column(Y) - 0 means right censoring, 1 means that the event occured.
- - Time to event column(T) - the duration until the event or the censoring occured. 
+ - A set of covariates/features(`X`).
+ - An outcome/event column(`Y`) - 0 means right censoring, 1 means that the event occured.
+ - Time to event column(`T`) - the duration until the event or the censoring occured. 
 
 The risk estimation task output is a survival function: for N time horizons, it outputs the probability of "survival"(event not occurring) at each horizon.
  
