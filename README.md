@@ -1,5 +1,5 @@
 <h3 align="center">
-  elastiv-surv
+  elastic-surv
 </h3>
 
 <h4 align="center">
